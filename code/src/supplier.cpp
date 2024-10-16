@@ -18,6 +18,21 @@ Supplier::Supplier(int uniqueId, int fund, std::vector<ItemType> resourcesSuppli
 
 int Supplier::request(ItemType it, int qty) {
     // TODO
+
+    // mutex start
+    std::map<ItemType, int> listItem = getItemsForSale();
+
+    try {
+        auto item = listItem.at(it);
+        if (item >= qty) {
+            this->stocks.at(it) -= qty;
+            // TODO
+            // Mettre à  jour money
+            return 1;
+        }
+    }  catch (const std::out_of_range& e) {
+        return 0;
+    }
     return 0;
 }
 
