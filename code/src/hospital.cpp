@@ -19,20 +19,41 @@ Hospital::Hospital(int uniqueId, int fund, int maxBeds)
 }
 
 int Hospital::request(ItemType what, int qty){
-    // TODO 
+
+    if(what == ItemType::PatientSick && this->stocks.at(what) >= qty) {
+        currentBeds -= qty;
+        stocks.at(what) -= qty;
+        return qty;
+    }
+
     return 0;
 }
 
 void Hospital::freeHealedPatient() {
-    // TODO 
+    if(stocks.at(ItemType::PatientHealed)){
+        stocks.at(ItemType::PatientHealed)--;
+        currentBeds--;
+        nbFree++;
+    }
 }
 
 void Hospital::transferPatientsFromClinic() {
     // TODO
+    //pay nurses
+    if(maxBeds > currentBeds) {
+
+    }
 }
 
 int Hospital::send(ItemType it, int qty, int bill) {
-    // TODO
+    bill += getEmployeeSalary(EmployeeType::Nurse);
+    if(money >= bill && maxBeds >= (qty + currentBeds)) {
+        money -= bill;
+        stocks.at(it) += qty;
+        currentBeds += qty;
+        nbHospitalised += qty;
+        return bill;
+    }
     return 0;
 }
 
@@ -45,7 +66,7 @@ void Hospital::run()
 
     interface->consoleAppendText(uniqueId, "[START] Hospital routine");
 
-    while (true /*TODO*/) {
+    while (!PcoThread::thisThread()->stopRequested()) {
         transferPatientsFromClinic();
 
         freeHealedPatient();

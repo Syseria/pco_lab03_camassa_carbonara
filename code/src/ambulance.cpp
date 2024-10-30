@@ -21,13 +21,16 @@ Ambulance::Ambulance(int uniqueId, int fund, std::vector<ItemType> resourcesSupp
 }
 
 void Ambulance::sendPatient(){
-    // TODO
+    if(stocks.at(ItemType::PatientSick)) {
+        stocks.at(ItemType::PatientSick)--;
+        money += getAmountPaidToWorkers();
+    }
 }
 
 void Ambulance::run() {
     interface->consoleAppendText(uniqueId, "[START] Ambulance routine");
 
-    while (true /*TODO*/) {
+    while (PcoThread::thisThread()->stopRequested()) {
     
         sendPatient();
         

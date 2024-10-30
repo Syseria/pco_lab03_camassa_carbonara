@@ -66,7 +66,7 @@ public:
 
     /**
      * @brief getAmountPaidToWorkers
-     * @return Le montant total payé aux travailleurs de l'ambulance.
+     * @return Le montant total payé aux travailleurs de l'hôpital.
      */
     int getAmountPaidToWorkers();
 
