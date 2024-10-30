@@ -94,7 +94,6 @@ private:
 
     void freeHealedPatient();
 
-    std::vector<Seller*> ambulances;  // Liste des ambulances liées à l'hôpital, qui apportent des patients malades
     std::vector<Seller*> clinics;     // Liste des cliniques liées à l'hôpital, qui renvoient des patients soignés
 
     int maxBeds;        // Nombre maximum de lits disponibles à l'hôpital
