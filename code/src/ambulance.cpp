@@ -25,7 +25,7 @@ void Ambulance::sendPatient(){
     auto h = chooseRandomSeller(hospitals);
     mutex.lock();
     if(stocks.at(ItemType::PatientSick)) {
-        if((h->request(ItemType::PatientSick, qty))) {
+        if((h->send(ItemType::PatientSick, qty, getCostPerUnit(ItemType::PatientSick)))) {
             stocks.at(ItemType::PatientSick)--;
             nbTransfer++;
             money += getCostPerUnit(ItemType::PatientSick);
