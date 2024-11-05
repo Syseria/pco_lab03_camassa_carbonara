@@ -175,7 +175,7 @@ void Utils::run() {
         thread->join();
     }
     
-    int startPatient = INITIAL_PATIENT_SICK;
+    int startPatient = INITIAL_PATIENT_SICK * ambulances.size();
 
     int endPatient = 0;
 

@@ -66,7 +66,7 @@ public:
 
     /**
      * @brief getAmountPaidToWorkers
-     * @return Le montant total payé aux travailleurs de l'ambulance.
+     * @return Le montant total payé aux travailleurs de l'hôpital.
      */
     int getAmountPaidToWorkers();
 
@@ -94,7 +94,6 @@ private:
 
     void freeHealedPatient();
 
-    std::vector<Seller*> ambulances;  // Liste des ambulances liées à l'hôpital, qui apportent des patients malades
     std::vector<Seller*> clinics;     // Liste des cliniques liées à l'hôpital, qui renvoient des patients soignés
 
     int maxBeds;        // Nombre maximum de lits disponibles à l'hôpital
@@ -106,8 +105,9 @@ private:
 
     static IWindowInterface* interface;  // Pointeur statique vers l'interface utilisateur pour les logs et mises à jour visuelles
 
-    int iterations;
     PcoMutex mutex;
+    int iterations;
+
 };
 
 #endif // HOSPITAL_H

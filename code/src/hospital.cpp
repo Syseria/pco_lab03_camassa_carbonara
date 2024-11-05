@@ -21,39 +21,33 @@ Hospital::Hospital(int uniqueId, int fund, int maxBeds)
 int Hospital::request(ItemType what, int qty){
     int ret = 0;
 
+    mutex.lock();
     if(what == ItemType::PatientSick && stocks.at(what) >= qty) {
-        mutex.lock();
-
         currentBeds -= qty;
         stocks.at(what) -= qty;
         int bill = qty * getCostPerUnit(ItemType::PatientSick);
         money += bill;
-        ret = bill;
-
-        mutex.unlock();
+        ret = bill;  
     }
-
+    mutex.unlock();
 
     return ret;
 }
 
 void Hospital::freeHealedPatient() {
 
+    mutex.lock();
     if(iterations >= 5) {
-        mutex.lock();
         if(stocks.at(ItemType::PatientHealed)){
             stocks.at(ItemType::PatientHealed)--;
             currentBeds--;
             nbFree++;
             iterations = 1;
         }
-        mutex.unlock();
     } else {
-        mutex.lock();
         iterations++;
-        mutex.unlock();
     }
-
+    mutex.unlock();
 }
 
 void Hospital::transferPatientsFromClinic() {
@@ -86,17 +80,15 @@ int Hospital::send(ItemType it, int qty, int bill) {
 
     int ret = 0;
 
+    mutex.lock();
     if(money >= newBill && maxBeds >= (qty + currentBeds)) {
-        mutex.lock();
-
         money -= newBill;
         stocks.at(it) += qty;
         currentBeds += qty;
         nbHospitalised += qty;
-
-        mutex.unlock();
         ret = bill;
     }
+    mutex.unlock();
 
     return ret;
 }
