@@ -66,7 +66,7 @@ public:
 
     /**
      * @brief getAmountPaidToWorkers
-     * @return Le montant total payé aux travailleurs de l'ambulance.
+     * @return Le montant total payé aux travailleurs de l'hôpital.
      */
     int getAmountPaidToWorkers();
 
@@ -104,6 +104,10 @@ private:
     int nbFree; // Nombre de personnes qui sont sorties soignées de l'hôpital.
 
     static IWindowInterface* interface;  // Pointeur statique vers l'interface utilisateur pour les logs et mises à jour visuelles
+
+    PcoMutex mutex;
+    int iterations;
+
 };
 
 #endif // HOSPITAL_H

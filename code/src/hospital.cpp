@@ -19,21 +19,87 @@ Hospital::Hospital(int uniqueId, int fund, int maxBeds)
 }
 
 int Hospital::request(ItemType what, int qty){
-    // TODO 
-    return 0;
+    int ret = 0;
+
+    if(what == ItemType::PatientSick && stocks.at(what) >= qty) {
+        mutex.lock();
+
+        currentBeds -= qty;
+        stocks.at(what) -= qty;
+        int bill = qty * getCostPerUnit(ItemType::PatientSick);
+        money += bill;
+        ret = bill;
+
+        mutex.unlock();
+    }
+
+
+    return ret;
 }
 
 void Hospital::freeHealedPatient() {
-    // TODO 
+
+    if(iterations >= 5) {
+        mutex.lock();
+        if(stocks.at(ItemType::PatientHealed)){
+            stocks.at(ItemType::PatientHealed)--;
+            currentBeds--;
+            nbFree++;
+            iterations = 1;
+        }
+        mutex.unlock();
+    } else {
+        mutex.lock();
+        iterations++;
+        mutex.unlock();
+    }
+
 }
 
 void Hospital::transferPatientsFromClinic() {
-    // TODO
+
+    auto cl = chooseRandomSeller(clinics);
+    int qty = 1;
+
+    for(int i = 0; i < cl->getItemsForSale().at(ItemType::PatientHealed); i++) {
+
+        if(maxBeds >= (currentBeds + qty) && money >= qty * getEmployeeSalary(EmployeeType::Nurse)) {
+            int patients = cl->request(ItemType::PatientHealed, 1);
+            if(patients) {
+                mutex.lock();
+
+                money -= qty * getEmployeeSalary(EmployeeType::Nurse);
+                stocks.at(ItemType::PatientHealed)++;
+                currentBeds++;
+
+                mutex.unlock();
+            }
+        } else {
+            break;
+        }
+    }
+
+
 }
 
 int Hospital::send(ItemType it, int qty, int bill) {
-    // TODO
-    return 0;
+    int newBill = bill + qty * getEmployeeSalary(EmployeeType::Nurse);
+
+    int ret = 0;
+
+    if(money >= newBill && maxBeds >= (qty + currentBeds)) {
+        mutex.lock();
+
+        money -= newBill;
+        stocks.at(it) += qty;
+        currentBeds += qty;
+        nbHospitalised += qty;
+
+        mutex.unlock();
+        ret = bill;
+    }
+
+    return ret;
 }
 
 void Hospital::run()
