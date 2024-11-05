@@ -61,22 +61,21 @@ void Hospital::transferPatientsFromClinic() {
     auto cl = chooseRandomSeller(clinics);
     int qty = 1;
 
-    for(int i = 0; i < cl->getItemsForSale().at(ItemType::PatientHealed); i++) {
+    for(int i = 0; i < cl->getItemsForSale()[ItemType::PatientHealed]; i++) {
 
+        mutex.lock();
         if(maxBeds >= (currentBeds + qty) && money >= qty * getEmployeeSalary(EmployeeType::Nurse)) {
-            int patients = cl->request(ItemType::PatientHealed, 1);
-            if(patients) {
-                mutex.lock();
-
-                money -= qty * getEmployeeSalary(EmployeeType::Nurse);
+            int bill = cl->request(ItemType::PatientHealed, 1);
+            if(bill) {
+                money -= bill + qty * getEmployeeSalary(EmployeeType::Nurse);
                 stocks.at(ItemType::PatientHealed)++;
                 currentBeds++;
-
-                mutex.unlock();
             }
         } else {
+            mutex.unlock();
             break;
         }
+        mutex.unlock();
     }
 
 
