@@ -103,6 +103,8 @@ protected:
     int nbTransfer;  // Nombre total d'items (patients) transférés par l'ambulance
     static IWindowInterface* interface;  // Interface pour les logs et mises à jour
     std::vector<Seller*> hospitals;  // Liste des hôpitaux associés à cette ambulance
+
+    PcoMutex mutex;
 };
 
 #endif // AMBULANCE_H

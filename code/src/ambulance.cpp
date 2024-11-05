@@ -22,8 +22,10 @@ Ambulance::Ambulance(int uniqueId, int fund, std::vector<ItemType> resourcesSupp
 
 void Ambulance::sendPatient(){
     if(stocks.at(ItemType::PatientSick)) {
+        mutex.lock();
         stocks.at(ItemType::PatientSick)--;
         money += getAmountPaidToWorkers();
+        mutex.unlock();
     }
 }
 
