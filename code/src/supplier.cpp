@@ -1,6 +1,7 @@
 #include "supplier.h"
 #include "costs.h"
 #include <pcosynchro/pcothread.h>
+#include <stdexcept>
 
 IWindowInterface* Supplier::interface = nullptr;
 
@@ -8,7 +9,7 @@ Supplier::Supplier(int uniqueId, int fund, std::vector<ItemType> resourcesSuppli
     : Seller(fund, uniqueId), resourcesSupplied(resourcesSupplied), nbSupplied(0) 
 {
     for (const auto& item : resourcesSupplied) {    
-        stocks[item] = 0;    
+        stocks[item] = 0;
     }
 
     interface->consoleAppendText(uniqueId, QString("Supplier Created"));
@@ -17,37 +18,50 @@ Supplier::Supplier(int uniqueId, int fund, std::vector<ItemType> resourcesSuppli
 
 
 int Supplier::request(ItemType it, int qty) {
-    // TODO
+    int price = 0;
 
-    // mutex start
+    mutex.lock();
     std::map<ItemType, int> listItem = getItemsForSale();
 
+    // try catch due to map.at() throwing out_of_range exception if key is not found
+    // correspond to the case "Objet non vendu"
     try {
-        auto item = listItem.at(it);
-        if (item >= qty) {
-            this->stocks.at(it) -= qty;
-            // TODO
-            // Mettre à  jour money
-            return 1;
+        int& item = listItem.at(it);
+
+        // If enough quantity in stocks and if qty is strictly greater than 0
+        // we sell, else returns 0 at the end of function
+        if (qty > 0 && item >= qty) {
+            price = getCostPerUnit(it) * qty;
+            item -= qty;
+            money += price;
+            nbSupplied += qty;
         }
+        mutex.unlock();
     }  catch (const std::out_of_range& e) {
-        return 0;
+        mutex.unlock();
+        return price;
     }
-    return 0;
+
+    return price;
 }
 
 void Supplier::run() {
     interface->consoleAppendText(uniqueId, "[START] Supplier routine");
-    while (true /*TODO*/) {
+    while (!PcoThread::thisThread()->stopRequested()) {
         ItemType resourceSupplied = getRandomItemFromStock();
         int supplierCost = getEmployeeSalary(getEmployeeThatProduces(resourceSupplied));
-        // TODO 
+
+        mutex.lock();
+        if (money < supplierCost) {
+            continue;
+        }
 
         /* Temps aléatoire borné qui simule l'attente du travail fini*/
         interface->simulateWork();
-        //TODO
 
-        nbSupplied++;
+        money -= supplierCost;
+        stocks.at(resourceSupplied) += 1;
+        mutex.unlock();
 
         interface->updateFund(uniqueId, money);
         interface->updateStock(uniqueId, &stocks);
@@ -79,6 +93,11 @@ void Supplier::setInterface(IWindowInterface *windowInterface) {
 std::vector<ItemType> Supplier::getResourcesSupplied() const
 {
     return resourcesSupplied;
+}
+
+
+int Supplier::getQuantitySupplied() const {
+    return nbSupplied;
 }
 
 int Supplier::send(ItemType it, int qty, int bill){
