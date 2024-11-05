@@ -19,28 +19,41 @@ Hospital::Hospital(int uniqueId, int fund, int maxBeds)
 }
 
 int Hospital::request(ItemType what, int qty){
+    int ret = 0;
 
-    if(what == ItemType::PatientSick && this->stocks.at(what) >= qty) {
+    if(what == ItemType::PatientSick && stocks.at(what) >= qty) {
         mutex.lock();
+
         currentBeds -= qty;
         stocks.at(what) -= qty;
         int bill = qty * getCostPerUnit(ItemType::PatientSick);
         money += bill;
+        ret = bill;
+
         mutex.unlock();
-        return qty;
     }
 
-    return 0;
+
+    return ret;
 }
 
 void Hospital::freeHealedPatient() {
-    if(stocks.at(ItemType::PatientHealed)){
+
+    if(iterations >= 5) {
         mutex.lock();
-        stocks.at(ItemType::PatientHealed)--;
-        currentBeds--;
-        nbFree++;
+        if(stocks.at(ItemType::PatientHealed)){
+            stocks.at(ItemType::PatientHealed)--;
+            currentBeds--;
+            nbFree++;
+            iterations = 1;
+        }
+        mutex.unlock();
+    } else {
+        mutex.lock();
+        iterations++;
         mutex.unlock();
     }
+
 }
 
 void Hospital::transferPatientsFromClinic() {
@@ -49,13 +62,16 @@ void Hospital::transferPatientsFromClinic() {
     int qty = 1;
 
     for(int i = 0; i < cl->getItemsForSale().at(ItemType::PatientHealed); i++) {
-        if(maxBeds >= (currentBeds + qty) && money >= getEmployeeSalary(EmployeeType::Nurse)) {
+
+        if(maxBeds >= (currentBeds + qty) && money >= qty * getEmployeeSalary(EmployeeType::Nurse)) {
             int patients = cl->request(ItemType::PatientHealed, 1);
             if(patients) {
                 mutex.lock();
-                money -= getEmployeeSalary(EmployeeType::Nurse);
+
+                money -= qty * getEmployeeSalary(EmployeeType::Nurse);
                 stocks.at(ItemType::PatientHealed)++;
                 currentBeds++;
+
                 mutex.unlock();
             }
         } else {
@@ -63,20 +79,27 @@ void Hospital::transferPatientsFromClinic() {
         }
     }
 
+
 }
 
 int Hospital::send(ItemType it, int qty, int bill) {
-    int newBill = bill + getEmployeeSalary(EmployeeType::Nurse);
+    int newBill = bill + qty * getEmployeeSalary(EmployeeType::Nurse);
+
+    int ret = 0;
+
     if(money >= newBill && maxBeds >= (qty + currentBeds)) {
         mutex.lock();
+
         money -= newBill;
         stocks.at(it) += qty;
         currentBeds += qty;
         nbHospitalised += qty;
+
         mutex.unlock();
-        return bill;
+        ret = bill;
     }
-    return 0;
+
+    return ret;
 }
 
 void Hospital::run()

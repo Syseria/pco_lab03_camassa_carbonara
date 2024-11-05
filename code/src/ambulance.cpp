@@ -21,18 +21,18 @@ Ambulance::Ambulance(int uniqueId, int fund, std::vector<ItemType> resourcesSupp
 }
 
 void Ambulance::sendPatient(){
+    mutex.lock();
     if(stocks.at(ItemType::PatientSick)) {
-        mutex.lock();
         stocks.at(ItemType::PatientSick)--;
         money += getAmountPaidToWorkers();
-        mutex.unlock();
     }
+    mutex.unlock();
 }
 
 void Ambulance::run() {
     interface->consoleAppendText(uniqueId, "[START] Ambulance routine");
 
-    while (PcoThread::thisThread()->stopRequested()) {
+    while (!PcoThread::thisThread()->stopRequested()) {
     
         sendPatient();
         
