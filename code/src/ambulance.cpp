@@ -21,10 +21,15 @@ Ambulance::Ambulance(int uniqueId, int fund, std::vector<ItemType> resourcesSupp
 }
 
 void Ambulance::sendPatient(){
+    int qty = 1;
+    auto h = chooseRandomSeller(hospitals);
     mutex.lock();
     if(stocks.at(ItemType::PatientSick)) {
-        stocks.at(ItemType::PatientSick)--;
-        money += getAmountPaidToWorkers();
+        if((h->request(ItemType::PatientSick, qty))) {
+            stocks.at(ItemType::PatientSick)--;
+            nbTransfer++;
+            money += getCostPerUnit(ItemType::PatientSick);
+        }
     }
     mutex.unlock();
 }
