@@ -5,7 +5,7 @@
 IWindowInterface* Ambulance::interface = nullptr;
 
 Ambulance::Ambulance(int uniqueId, int fund, std::vector<ItemType> resourcesSupplied, std::map<ItemType, int> initialStocks)
-    : Seller(fund, uniqueId), resourcesSupplied(resourcesSupplied), nbTransfer(0) 
+    : Seller(fund, uniqueId), resourcesSupplied(resourcesSupplied), nbTransfer(0)
 {
     interface->consoleAppendText(uniqueId, QString("Ambulance Created"));
 
@@ -21,16 +21,26 @@ Ambulance::Ambulance(int uniqueId, int fund, std::vector<ItemType> resourcesSupp
 }
 
 void Ambulance::sendPatient(){
-    // TODO
+    int qty = 1;
+    auto h = chooseRandomSeller(hospitals);
+    mutex.lock();
+    if(stocks.at(ItemType::PatientSick)) {
+        if((h->send(ItemType::PatientSick, qty, getCostPerUnit(ItemType::PatientSick)))) {
+            stocks.at(ItemType::PatientSick)--;
+            nbTransfer++;
+            money += getCostPerUnit(ItemType::PatientSick);
+        }
+    }
+    mutex.unlock();
 }
 
 void Ambulance::run() {
     interface->consoleAppendText(uniqueId, "[START] Ambulance routine");
 
     while (!PcoThread::thisThread()->stopRequested()) {
-    
+
         sendPatient();
-        
+
         interface->simulateWork();
 
         interface->updateFund(uniqueId, money);

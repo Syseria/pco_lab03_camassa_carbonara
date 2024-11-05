@@ -21,8 +21,6 @@ EmployeeType getEmployeeThatProduces(ItemType item);
 int getEmployeeSalary(EmployeeType employee);
 
 class Seller {
-protected:
-    PcoMutex mutex;
 public:
     /**
      * @brief Seller
