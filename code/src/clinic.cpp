@@ -13,71 +13,75 @@ Clinic::Clinic(int uniqueId, int fund, std::vector<ItemType> resourcesNeeded)
     interface->consoleAppendText(uniqueId, "Factory created");
 
     for(const auto& item : resourcesNeeded) {
+        mutex.lock();
         stocks[item] = 0;
+        mutex.unlock();
     }
 }
 
 bool Clinic::verifyResources() {
+    mutex.lock();
     for (auto item : resourcesNeeded) {
-        if (stocks[item] == 0) {
+        if (stocks[item] <= 0) {
+            mutex.unlock();
             return false;
         }
     }
+    mutex.unlock();
     return true;
 }
 
 int Clinic::request(ItemType what, int qty){
     int price = 0;
 
-    mutex.lock();
-    std::map<ItemType, int> listItem = getItemsForSale();
-
-    // try catch due to map.at() throwing out_of_range exception if key is not found
-    // correspond to the case "Objet non vendu"
-    try {
-        int& item = listItem.at(what);
-
-        // If enough quantity in stocks and if qty is strictly greater than 0
-        // we sell, else returns 0 at the end of function
-        if (qty > 0 && item >= qty) {
-            price = getCostPerUnit(what) * qty;
-            item -= qty;
-            money += price;
-        }
-        mutex.unlock();
-    } catch (const std::out_of_range& e) {
-        mutex.unlock();
+    if (what != ItemType::PatientHealed) {
         return price;
     }
+
+    mutex.lock();
+
+    // If enough quantity in stocks and if qty is strictly greater than 0
+    // we sell, else returns 0 at the end of function
+    if (qty > 0 && stocks[what] >= qty) {
+        price = getCostPerUnit(what) * qty;
+        stocks[what] -= qty;
+        money += price;
+    }
+    mutex.unlock();
 
     return price;
 }
 
 void Clinic::treatPatient() {
     int cost = getEmployeeSalary(getEmployeeThatProduces(ItemType::PatientHealed));
+    bool canTreat = true;
 
+    mutex.lock();
     if (!getWaitingPatients() && cost > money) {
+        mutex.unlock();
         return;
     }
 
     for (ItemType item : resourcesNeeded) {
-        if (item == ItemType::PatientSick) {
-            continue;
+        if (stocks[item] <= 0) {
+            canTreat = false;
         }
-        mutex.lock();
-        --stocks.at(item);
-        mutex.unlock();
     }
 
-    //Temps simulant un traitement
-    interface->simulateWork();
+    if (canTreat) {
+        //Temps simulant un traitement
+        interface->simulateWork();
 
-    mutex.lock();
-    money -= cost;
-    --stocks.at(ItemType::PatientSick);
-    ++nbTreated;
+        money -= cost;
+        for (ItemType item : resourcesNeeded) {
+            --stocks[item];
+        }
+
+        ++stocks[ItemType::PatientHealed];
+        ++nbTreated;
+    }
+
     mutex.unlock();
-    
     interface->consoleAppendText(uniqueId, "Clinic have healed a new patient");
 }
 
@@ -85,26 +89,32 @@ void Clinic::orderResources() {
     int qtyToBuy = 1;
     int cost = 0;
 
-    mutex.lock();
     for (ItemType item : resourcesNeeded) {
-        if (item == ItemType::PatientSick && stocks.at(item) <= 0) {
+        switch (item) {
+        case ItemType::PatientSick:
             for (auto hospital : hospitals) {
-                if (getCostPerUnit(item) * qtyToBuy < money) {
-                    cost += hospital->request(item, qtyToBuy);
+                mutex.lock();
+                if ((cost = hospital->request(item, qtyToBuy)) < money && stocks[item] <= 0) {
+                    money -= cost;
+                    stocks[item] += qtyToBuy;
+                    interface->consoleAppendText(uniqueId, "Clinic has gotten a new " + getItemName(item));
                 }
+                mutex.unlock();
             }
-        } else {
+            break;
+        default:
             for (auto supplier : suppliers) {
-                if (getCostPerUnit(item) * qtyToBuy < money) {
-                    cost += supplier->request(item, qtyToBuy);
+                mutex.lock();
+                if (supplier->getItemsForSale().find(item) != getItemsForSale().end() && (cost = supplier->request(item, qtyToBuy)) < money && stocks[item] <= 0) {
+                    money -= cost;
+                    stocks[item] += qtyToBuy;
+                    interface->consoleAppendText(uniqueId, "Clinic has bought a new " + getItemName(item));
                 }
+                mutex.unlock();
             }
+            break;
         }
-
-        money -= cost;
-        stocks.at(item) += qtyToBuy;
     }
-    mutex.unlock();
 }
 
 void Clinic::run() {
@@ -115,7 +125,7 @@ void Clinic::run() {
     interface->consoleAppendText(uniqueId, "[START] Factory routine");
 
     while (!PcoThread::thisThread()->stopRequested()) {
-        
+
         if (verifyResources()) {
             treatPatient();
         } else {

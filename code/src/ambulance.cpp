@@ -5,7 +5,7 @@
 IWindowInterface* Ambulance::interface = nullptr;
 
 Ambulance::Ambulance(int uniqueId, int fund, std::vector<ItemType> resourcesSupplied, std::map<ItemType, int> initialStocks)
-    : Seller(fund, uniqueId), resourcesSupplied(resourcesSupplied), nbTransfer(0) 
+    : Seller(fund, uniqueId), resourcesSupplied(resourcesSupplied), nbTransfer(0)
 {
     interface->consoleAppendText(uniqueId, QString("Ambulance Created"));
 
@@ -39,9 +39,9 @@ void Ambulance::run() {
     interface->consoleAppendText(uniqueId, "[START] Ambulance routine");
 
     while (!PcoThread::thisThread()->stopRequested()) {
-    
+
         sendPatient();
-        
+
         interface->simulateWork();
 
         interface->updateFund(uniqueId, money);

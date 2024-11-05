@@ -10,7 +10,7 @@ Hospital::Hospital(int uniqueId, int fund, int maxBeds)
 {
     interface->updateFund(uniqueId, fund);
     interface->consoleAppendText(uniqueId, "Hospital Created with " + QString::number(maxBeds) + " beds");
-    
+
     std::vector<ItemType> initialStocks = { ItemType::PatientHealed, ItemType::PatientSick };
 
     for(const auto& item : initialStocks) {
@@ -48,7 +48,6 @@ void Hospital::freeHealedPatient() {
         iterations++;
     }
     mutex.unlock();
-
 }
 
 void Hospital::transferPatientsFromClinic() {

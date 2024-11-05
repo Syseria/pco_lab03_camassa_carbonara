@@ -21,26 +21,17 @@ int Supplier::request(ItemType it, int qty) {
     int price = 0;
 
     mutex.lock();
-    std::map<ItemType, int> listItem = getItemsForSale();
+    auto listItem = getItemsForSale();
 
-    // try catch due to map.at() throwing out_of_range exception if key is not found
-    // correspond to the case "Objet non vendu"
-    try {
-        int& item = listItem.at(it);
-
-        // If enough quantity in stocks and if qty is strictly greater than 0
-        // we sell, else returns 0 at the end of function
-        if (qty > 0 && item >= qty) {
-            price = getCostPerUnit(it) * qty;
-            item -= qty;
-            money += price;
-            nbSupplied += qty;
-        }
-        mutex.unlock();
-    }  catch (const std::out_of_range& e) {
-        mutex.unlock();
-        return price;
+    // If enough quantity in stocks and if qty is strictly greater than 0
+    // we sell, else returns 0 at the end of function
+    if (qty > 0 && listItem.find(it) != listItem.end() && listItem[it] >= qty) {
+        price = getCostPerUnit(it) * qty;
+        stocks[it] -= qty;
+        money += price;
+        nbSupplied += qty;
     }
+    mutex.unlock();
 
     return price;
 }
