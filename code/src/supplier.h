@@ -1,7 +1,6 @@
 #ifndef SUPPLIER_H
 #define SUPPLIER_H
 #include <QTimer>
-#include <pcosynchro/pcomutex.h>
 
 #include "iwindowinterface.h"
 
@@ -70,6 +69,12 @@ public:
      * @return Un vecteur contenant les types d'items fournis
      */
     std::vector<ItemType> getResourcesSupplied() const;
+
+    /**
+     * @brief Obtenir la quantité des ressources fournies par ce fournisseur
+     * @return Un int
+     */
+    int getQuantitySupplied() const;
 
 protected:
     std::vector<ItemType> resourcesSupplied;  // Liste des items que ce fournisseur gère

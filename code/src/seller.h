@@ -5,6 +5,7 @@
 #include <QStringBuilder>
 #include <map>
 #include <vector>
+#include <pcosynchro/pcomutex.h>
 #include "costs.h"
 
 enum class ItemType {
@@ -20,6 +21,8 @@ EmployeeType getEmployeeThatProduces(ItemType item);
 int getEmployeeSalary(EmployeeType employee);
 
 class Seller {
+protected:
+    PcoMutex mutex;
 public:
     /**
      * @brief Seller

@@ -32,6 +32,97 @@ void requestPatients(Hospital& hospital, ItemType itemType, std::atomic<int>& to
     totalGained += tot;
 }
 
+void requestSupply(Pharmacy& pharma, std::vector<ItemType> items, std::atomic<int>& totalGained) {
+    int tot = 0;
+    for (size_t i = 0; i < 20000; ++i) {
+        int qty = 1;
+        for (ItemType item : items) {
+            tot += pharma.request(item, qty);
+        }
+    }
+
+    totalGained += tot;
+}
+
+void requestMedicalSupply(MedicalDeviceSupplier& medicalDeviceSupplier, std::vector<ItemType> items, std::atomic<int>& totalGained) {
+    int tot = 0;
+    for (size_t i = 0; i < 20000; ++i) {
+        int qty = 1;
+        for (ItemType item : items) {
+            tot += medicalDeviceSupplier.request(item, qty);
+        }
+    }
+
+    totalGained += tot;
+}
+
+TEST(TestSuppliers, MedicalDeviceSupplierTest) {
+    const int uniqueId = 0;
+    const int initialFund = 20000;
+    const unsigned int nbThreads = 4;
+    int endFund = 0;
+    std::atomic<int> totalPaid = 0;
+    std::atomic<int> totalGained = 0;
+
+    IWindowInterface* windowInterface = new FakeInterface();
+    Supplier::setInterface(windowInterface);
+
+    MedicalDeviceSupplier medicalDeviceSupplier(uniqueId, initialFund);
+
+    std::vector<ItemType> items = { ItemType::Scalpel, ItemType::Thermometer, ItemType::Stethoscope };
+
+    std::vector<std::unique_ptr<PcoThread>> threads;
+
+    for (unsigned int i = 0; i < nbThreads; ++i) {
+        threads.emplace_back(std::make_unique<PcoThread>(requestMedicalSupply, std::ref(medicalDeviceSupplier), items, std::ref(totalGained)));
+    }
+
+    for (auto& thread : threads) {
+        thread->join();
+    }
+
+    endFund += medicalDeviceSupplier.getFund();
+    endFund += medicalDeviceSupplier.getAmountPaidToWorkers();
+    endFund += totalPaid;
+    endFund -= totalGained;
+
+    EXPECT_EQ(endFund, initialFund);
+    EXPECT_GT(medicalDeviceSupplier.getQuantitySupplied(), 0);
+}
+
+TEST(TestSuppliers, PharmacyTest) {
+    const int uniqueId = 0;
+    const int initialFund = 20000;
+    const unsigned int nbThreads = 4;
+    int endFund = 0;
+    std::atomic<int> totalPaid = 0;
+    std::atomic<int> totalGained = 0;
+
+    IWindowInterface* windowInterface = new FakeInterface();
+    Supplier::setInterface(windowInterface);
+
+    Pharmacy pharmacy(uniqueId, initialFund);
+
+    std::vector<ItemType> items = { ItemType::Syringe, ItemType::Pill };
+
+    std::vector<std::unique_ptr<PcoThread>> threads;
+
+    for (unsigned int i = 0; i < nbThreads; ++i) {
+        threads.emplace_back(std::make_unique<PcoThread>(requestSupply, std::ref(pharmacy), items, std::ref(totalGained)));
+    }
+
+    for (auto& thread : threads) {
+        thread->join();
+    }
+
+    endFund += pharmacy.getFund();
+    endFund += pharmacy.getAmountPaidToWorkers();
+    endFund += totalPaid;
+    endFund -= totalGained;
+
+    EXPECT_EQ(endFund, initialFund);
+    EXPECT_GT(pharmacy.getQuantitySupplied(), 0);
+}
 
 TEST(SellerTest, TestHospitals) {
     const int uniqueId = 0;

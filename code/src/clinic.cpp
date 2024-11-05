@@ -2,6 +2,7 @@
 #include "costs.h"
 #include <pcosynchro/pcothread.h>
 #include <iostream>
+#include <stdexcept>
 
 IWindowInterface* Clinic::interface = nullptr;
 
@@ -26,24 +27,84 @@ bool Clinic::verifyResources() {
 }
 
 int Clinic::request(ItemType what, int qty){
-    // TODO 
+    int price = 0;
 
-    return 0;
+    mutex.lock();
+    std::map<ItemType, int> listItem = getItemsForSale();
+
+    // try catch due to map.at() throwing out_of_range exception if key is not found
+    // correspond to the case "Objet non vendu"
+    try {
+        int& item = listItem.at(what);
+
+        // If enough quantity in stocks and if qty is strictly greater than 0
+        // we sell, else returns 0 at the end of function
+        if (qty > 0 && item >= qty) {
+            price = getCostPerUnit(what) * qty;
+            item -= qty;
+            money += price;
+        }
+        mutex.unlock();
+    } catch (const std::out_of_range& e) {
+        mutex.unlock();
+        return price;
+    }
+
+    return price;
 }
 
 void Clinic::treatPatient() {
-    // TODO 
+    int cost = getEmployeeSalary(getEmployeeThatProduces(ItemType::PatientHealed));
 
-    //Temps simulant un traitement 
+    if (!getWaitingPatients() && cost > money) {
+        return;
+    }
+
+    for (ItemType item : resourcesNeeded) {
+        if (item == ItemType::PatientSick) {
+            continue;
+        }
+        mutex.lock();
+        --stocks.at(item);
+        mutex.unlock();
+    }
+
+    //Temps simulant un traitement
     interface->simulateWork();
 
-    // TODO 
+    mutex.lock();
+    money -= cost;
+    --stocks.at(ItemType::PatientSick);
+    ++nbTreated;
+    mutex.unlock();
     
     interface->consoleAppendText(uniqueId, "Clinic have healed a new patient");
 }
 
 void Clinic::orderResources() {
-    // TODO 
+    int qtyToBuy = 1;
+    int cost = 0;
+
+    mutex.lock();
+    for (ItemType item : resourcesNeeded) {
+        if (item == ItemType::PatientSick && stocks.at(item) <= 0) {
+            for (auto hospital : hospitals) {
+                if (getCostPerUnit(item) * qtyToBuy < money) {
+                    cost += hospital->request(item, qtyToBuy);
+                }
+            }
+        } else {
+            for (auto supplier : suppliers) {
+                if (getCostPerUnit(item) * qtyToBuy < money) {
+                    cost += supplier->request(item, qtyToBuy);
+                }
+            }
+        }
+
+        money -= cost;
+        stocks.at(item) += qtyToBuy;
+    }
+    mutex.unlock();
 }
 
 void Clinic::run() {
@@ -53,7 +114,7 @@ void Clinic::run() {
     }
     interface->consoleAppendText(uniqueId, "[START] Factory routine");
 
-    while (true /*TODO*/) {
+    while (!PcoThread::thisThread()->stopRequested()) {
         
         if (verifyResources()) {
             treatPatient();

@@ -2,7 +2,6 @@
 #define CLINIC_H
 
 #include <vector>
-#include <pcosynchro/pcomutex.h>
 
 #include "iwindowinterface.h"
 #include "seller.h"
